@@ -79,6 +79,7 @@ public final class WorldState {
     public void update() {
         updateCooldowns();
         updatePhysics();
+        updateBullets();
     }
 
     private void updatePhysics() {
@@ -123,11 +124,19 @@ public final class WorldState {
             ServerBullet b = it.next();
             b.x += b.vx;
 
+            // Удаление за пределами экрана
+            if (b.x < -100 || b.x > 3000) {
+                it.remove();
+                continue;
+            }
+
+            // Проверка попадания
             for (PlayerState p : players.values()) {
-                if (p.id == b.ownerId) continue;
+                if (p.id == b.ownerId) continue; // нельзя стрелять в себя
 
                 if (hit(b, p)) {
                     p.hp -= 10;
+                    if (p.hp <= 0) p.hp = 0;
                     it.remove();
                     break;
                 }
@@ -144,11 +153,7 @@ public final class WorldState {
     // ================= BULLETS =================
 
     private void spawnBullet(PlayerState p) {
-        ServerBullet b = new ServerBullet();
-        b.x = p.x;
-        b.y = p.y;
-        b.vx = p.facingRight ? 25 : -25;
-        b.ownerId = p.id;
+        ServerBullet b = new ServerBullet(p.x, p.y, p.facingRight ? 25 : -25, p.id);
         bullets.add(b);
     }
 

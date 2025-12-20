@@ -6,6 +6,7 @@ import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.entity.RenderablePlayer;
 import aa.tulybaev.client.model.world.objects.*;
+import aa.tulybaev.protocol.BulletSnapshot;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,10 +68,9 @@ public final class World {
 
         // ===== BULLETS =====
         bullets.clear();
-        // TODO: восстановить, когда будут bullet-снапшоты
-//         snapshot.bullets().forEach((id, bv) -> {
-//             bullets.put(id, new Bullet(bv.x(), bv.y(), 0));
-//         });
+        for (BulletSnapshot bs : snapshot.bullets()) {
+            bullets.put(bs.id(), new Bullet(bs.x(), bs.y(), bs.vx()));
+        }
     }
 
     // ================= LEVEL =================

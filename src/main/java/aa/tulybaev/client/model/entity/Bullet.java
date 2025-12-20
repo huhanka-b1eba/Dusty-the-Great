@@ -1,7 +1,6 @@
 package aa.tulybaev.client.model.entity;
 
 public class Bullet {
-
     private double x, y;
     private final double vx;
     private int life = 120;

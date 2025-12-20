@@ -103,7 +103,7 @@ public final class Renderer {
         g.setColor(Color.YELLOW);
         for (Bullet b : world.getBullets()) {
             int x = (int) b.getX() - camera.getX();
-            int y = (int) b.getY() - camera.getY();
+            int y = (int) b.getY() - camera.getY() + 60;
             g.fillOval(x, y, 6, 6);
         }
     }

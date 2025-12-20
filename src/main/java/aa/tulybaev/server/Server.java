@@ -7,7 +7,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -83,19 +82,30 @@ public class Server {
 
     private void broadcastSnapshot(int tick) {
         var players = world.getPlayers();
-        var snapshots = players.stream()
+        var playerSnapshots = players.stream()
                 .map(p -> new PlayerSnapshot(
                         p.id,
                         (float) p.x,
                         (float) p.y,
                         p.facingRight,
                         p.hp,
-                        Math.abs(p.vx) > 0.1f, // isMoving
-                        p.onGround             // isOnGround ← нужно добавить в PlayerState!
+                        Math.abs(p.vx) > 0.1f,
+                        p.onGround
                 ))
                 .toList();
 
-        WorldSnapshotMessage msg = new WorldSnapshotMessage(tick, snapshots);
+        // Пули:
+        var bulletSnapshots = world.getBullets().stream()
+                .map(b -> new BulletSnapshot(
+                        b.id,      // ← нужно добавить id в ServerBullet!
+                        (float) b.x,
+                        (float) b.y,
+                        (float) b.vx,
+                        b.ownerId
+                ))
+                .toList();
+
+        WorldSnapshotMessage msg = new WorldSnapshotMessage(tick, playerSnapshots, bulletSnapshots);
         for (ClientHandler client : allClients) {
             client.send(msg);
         }

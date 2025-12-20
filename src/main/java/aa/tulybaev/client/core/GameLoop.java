@@ -1,6 +1,7 @@
 package aa.tulybaev.client.core;
 
 import aa.tulybaev.client.input.InputHandler;
+import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.world.World;
 import aa.tulybaev.client.network.NetworkClient;
@@ -62,6 +63,10 @@ public final class GameLoop implements Runnable {
                 if (snap != null) {
                     System.out.println("Applying snapshot with " + snap.players().size() + " players");
                     world.applyInterpolated(snap);
+                    world.getBullets().removeIf(bullet -> !bullet.isAlive());
+                    for (Bullet b : world.getBullets()) {
+                        b.update(); // летят даже если снапшот старый
+                    }
                 } else {
                     System.out.println("No snapshot available yet");
                 }

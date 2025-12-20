@@ -1,9 +1,12 @@
 package aa.tulybaev.client.core;
 
+import aa.tulybaev.protocol.BulletSnapshot;
 import aa.tulybaev.protocol.PlayerSnapshot;
 import aa.tulybaev.protocol.WorldSnapshotMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,12 +16,15 @@ import java.util.Map;
 public final class InterpolatedSnapshot {
 
     private final Map<Integer, PlayerView> players = new HashMap<>();
+    private final List<BulletSnapshot> bullets = new ArrayList<>();
+
 
     public InterpolatedSnapshot(
             WorldSnapshotMessage a,
             WorldSnapshotMessage b,
             float alpha
     ) {
+        // ===== PLAYERS =====
         for (PlayerSnapshot p1 : a.players()) {
             PlayerSnapshot p2 = findPlayer(b, p1.id());
             if (p2 == null) continue;
@@ -34,13 +40,16 @@ public final class InterpolatedSnapshot {
                             y,
                             p2.facingRight(),
                             p2.hp(),
-                            p2.isMoving(),      // ← новое
-                            p2.isOnGround()     // ← новое
+                            p2.isMoving(),
+                            p2.isOnGround()
                     )
             );
         }
-    }
 
+        // ===== BULLETS =====
+        // Пули не интерполируем — просто берём из нового снапшота
+        this.bullets.addAll(b.bullets());
+    }
     private PlayerSnapshot findPlayer(WorldSnapshotMessage snap, int id) {
         for (PlayerSnapshot p : snap.players()) {
             if (p.id() == id) return p;
@@ -54,6 +63,10 @@ public final class InterpolatedSnapshot {
 
     public Map<Integer, PlayerView> players() {
         return players;
+    }
+
+    public List<BulletSnapshot> bullets() { // ← новое
+        return bullets;
     }
 }
 
