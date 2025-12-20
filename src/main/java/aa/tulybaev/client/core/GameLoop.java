@@ -4,6 +4,7 @@ import aa.tulybaev.client.input.InputHandler;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.world.World;
 import aa.tulybaev.client.network.NetworkClient;
+import aa.tulybaev.client.ui.GameFrame;
 import aa.tulybaev.client.ui.GamePanel;
 
 public final class GameLoop implements Runnable {
@@ -15,18 +16,21 @@ public final class GameLoop implements Runnable {
     private final NetworkClient network;
     private final SnapshotBuffer snapshotBuffer;
     private final InputHandler input;
+    private final GameFrame frame;
 
     private int renderTick = 0;
 
     public GameLoop(
             World world,
             GamePanel panel,
+            GameFrame frame,          // ← новое
             NetworkClient network,
             SnapshotBuffer snapshotBuffer,
             InputHandler input
     ) {
         this.world = world;
         this.panel = panel;
+        this.frame = frame;       // ← сохраняем
         this.network = network;
         this.snapshotBuffer = snapshotBuffer;
         this.input = input;

@@ -14,7 +14,7 @@ public class Main {
         World world = new World();
         SnapshotBuffer snapshotBuffer = new SnapshotBuffer();
         InputHandler input = new InputHandler();
-        NetworkClient network = new NetworkClient(snapshotBuffer); // ← новый TCP-клиент
+        NetworkClient network = new NetworkClient(snapshotBuffer);
 
         GamePanel panel = new GamePanel(world);
         panel.addKeyListener(input);
@@ -24,7 +24,8 @@ public class Main {
         GameFrame frame = new GameFrame(panel);
         frame.setVisible(true);
 
-        GameLoop loop = new GameLoop(world, panel, network, snapshotBuffer, input);
+        // Передаём frame в GameLoop
+        GameLoop loop = new GameLoop(world, panel, frame, network, snapshotBuffer, input);
         Thread gameThread = new Thread(loop, "GameLoop");
         gameThread.start();
 
