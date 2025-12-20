@@ -2,7 +2,7 @@ package aa.tulybaev.client.model.world;
 
 import aa.tulybaev.client.core.InterpolatedSnapshot;
 import aa.tulybaev.client.core.PlayerView;
-//import aa.tulybaev.client.model.entity.Bullet;
+import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.entity.RenderablePlayer;

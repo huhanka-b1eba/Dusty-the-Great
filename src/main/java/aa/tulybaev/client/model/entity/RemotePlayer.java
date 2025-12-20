@@ -70,6 +70,10 @@ public final class RemotePlayer implements RenderablePlayer {
 
     // ================= GETTERS =================
 
+    public int getMaxHp() {
+        return 100; // или константа
+    }
+
     public int getDrawX() { return x; }
     public int getDrawY() { return y; }
 

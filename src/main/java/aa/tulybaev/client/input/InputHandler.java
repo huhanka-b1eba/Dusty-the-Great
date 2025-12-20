@@ -28,6 +28,14 @@ public class InputHandler extends KeyAdapter {
         }
     }
 
+    public boolean consumeShoot() {
+        if (shootPressed) {
+            shootPressed = false;
+            return true;
+        }
+        return false;
+    }
+
     public float getDx() {
         if (left && !right) return -1f;
         if (right && !left) return 1f;

@@ -1,12 +1,10 @@
 package aa.tulybaev.client.core;
 
 import aa.tulybaev.client.input.InputHandler;
-import aa.tulybaev.client.model.entity.Player;
+import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.world.World;
 import aa.tulybaev.client.network.NetworkClient;
 import aa.tulybaev.client.ui.GamePanel;
-
-import java.util.List;
 
 public final class GameLoop implements Runnable {
 
@@ -17,7 +15,6 @@ public final class GameLoop implements Runnable {
     private final NetworkClient network;
     private final SnapshotBuffer snapshotBuffer;
     private final InputHandler input;
-    private final Player localPlayer;
 
     private int renderTick = 0;
 
@@ -33,9 +30,6 @@ public final class GameLoop implements Runnable {
         this.network = network;
         this.snapshotBuffer = snapshotBuffer;
         this.input = input;
-
-        // Создаём локального игрока (временно, позже позиция будет из снапшота)
-        this.localPlayer = new Player(100, 300); // начальная позиция
     }
 
     @Override
@@ -43,49 +37,46 @@ public final class GameLoop implements Runnable {
         long nsPerFrame = 1_000_000_000L / FPS;
         long last = System.nanoTime();
 
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             long now = System.nanoTime();
 
             if (now - last >= nsPerFrame) {
                 renderTick++;
 
-                // 1. Обновляем логику локального игрока
-                localPlayer.update(
-                        input,
-                        List.of(),
-                        world.getGroundY(),
-                        world.getPlatforms()  // ← теперь возвращает List<Platform>
-                );
+                // 1. Собираем ввод
+                float dx = input.getDx();
+                float dy = input.getDy();
+                boolean shoot = input.consumeShoot();
 
-                // 2. Отправляем ввод (или позицию) на сервер
-                network.sendInput(
-                        localPlayer.getX(),
-                        localPlayer.getY(),
-                        localPlayer.isFacingRight() ? 1 : 0  // ← facing как 1/0
-                );
+                // 2. Отправляем только ввод (если подключены)
+                if (network.getPlayerId() >= 0) {
+                    network.sendInput(dx, dy, shoot);
+                }
 
-                // 3. Получаем снапшоты и обновляем визуальное состояние мира
+                // 3. Применяем снапшоты для рендера
                 InterpolatedSnapshot snap = snapshotBuffer.getInterpolated(renderTick);
                 if (snap != null) {
                     world.applyInterpolated(snap);
+                    world.setLocalPlayerId(network.getPlayerId());
                 }
 
-                // 4. Передаём данные HUD в панель (или напрямую в Renderer)
-                panel.setHudData(
-                        localPlayer.getHp(),
-                        localPlayer.getMaxHp(),
-                        localPlayer.getAmmo(),
-                        localPlayer.isShooting()
-                );
+                // 4. Обновляем HUD (берём данные из world)
+                RemotePlayer local = world.getLocalPlayer();
+                if (local != null) {
+                    panel.setHudData(local.getHp(), local.getMaxHp(), 100, false);
+                }
 
-                // 5. Рендер
+                // 5. Перерисовка
                 panel.repaint();
 
                 last = now;
             }
+
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException ignored) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
     }
