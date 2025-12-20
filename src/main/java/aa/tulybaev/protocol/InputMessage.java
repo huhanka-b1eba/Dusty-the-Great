@@ -1,6 +1,8 @@
 package aa.tulybaev.protocol;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 public final class InputMessage implements GameMessage {
 
