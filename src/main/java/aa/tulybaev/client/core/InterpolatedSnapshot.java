@@ -33,7 +33,9 @@ public final class InterpolatedSnapshot {
                             x,
                             y,
                             p2.facingRight(),
-                            p2.hp()
+                            p2.hp(),
+                            p2.isMoving(),      // ← новое
+                            p2.isOnGround()     // ← новое
                     )
             );
         }

@@ -89,7 +89,9 @@ public class Server {
                         (float) p.x,
                         (float) p.y,
                         p.facingRight,
-                        p.hp
+                        p.hp,
+                        Math.abs(p.vx) > 0.1f, // isMoving
+                        p.onGround             // isOnGround ← нужно добавить в PlayerState!
                 ))
                 .toList();
 
@@ -146,7 +148,7 @@ public class Server {
                     if (playerId != input.playerId()) {
                         throw new IOException("Player ID mismatch");
                     }
-                    world.applyInput(playerId, input.dx(), input.dy(), input.shoot());
+                    world.applyInput(playerId, input.dx(), input.jump(), input.shoot()); // ← jump вместо dy
                 }
 
                 case DISCONNECT -> {

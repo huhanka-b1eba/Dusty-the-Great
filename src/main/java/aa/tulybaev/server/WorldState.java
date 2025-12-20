@@ -14,9 +14,11 @@ public final class WorldState {
     public static final class PlayerState {
         public int id;
         public double x, y;
+        public double vx, vy; // ← новые поля для скорости
         public boolean facingRight;
         public int hp = 100;
         public int shootCooldown = 0;
+        public boolean onGround = false; // ← новое поле
     }
 
     private final Map<Integer, PlayerState> players =
@@ -34,6 +36,9 @@ public final class WorldState {
         p.id = id;
         p.x = 200 + id * 100;
         p.y = 200;
+        p.vx = 0;
+        p.vy = 0;
+        p.onGround = false;
         players.put(id, p);
         return p;
     }
@@ -44,24 +49,25 @@ public final class WorldState {
 
     // ================= INPUT =================
 
-    public void applyInput(
-            int playerId,
-            float dx,
-            float dy,
-            boolean shoot
-    ) {
+    public void applyInput(int playerId, float dx, boolean jump, boolean shoot) {
         PlayerState p = players.get(playerId);
         if (p == null) return;
 
-        // movement
-        p.x += dx * 6;
-        p.y += dy * 8;
-
-        if (dx != 0) {
-            p.facingRight = dx > 0;
+        if (dx > 0) {
+            p.facingRight = true;
+        } else if (dx < 0) {
+            p.facingRight = false;
         }
 
-        // shooting
+        p.vx = dx * 6;
+
+        // Прыжок
+        if (jump && p.onGround) {
+            p.vy = -12;
+            p.onGround = false;
+        }
+
+        // Стрельба
         if (shoot && p.shootCooldown == 0) {
             spawnBullet(p);
             p.shootCooldown = 15;
@@ -72,7 +78,35 @@ public final class WorldState {
 
     public void update() {
         updateCooldowns();
-//        updateBullets();
+        updatePhysics();
+    }
+
+    private void updatePhysics() {
+        for (PlayerState p : players.values()) {
+            // Гравитация
+            if (!p.onGround) {
+                p.vy += 0.6; // гравитация
+            } else {
+                p.vy = 0;
+            }
+
+            // Применяем скорость
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // Простая коллизия с землёй (GROUND_Y = 400, высота игрока = 64)
+            if (p.y >= 400 - 64) {
+                p.y = 400 - 64;
+                p.vy = 0;
+                p.onGround = true;
+            } else {
+                p.onGround = false;
+            }
+
+            // Трение (останавливаем по горизонтали)
+            p.vx *= 0.8;
+            if (Math.abs(p.vx) < 0.1) p.vx = 0;
+        }
     }
 
     private void updateCooldowns() {

@@ -28,6 +28,14 @@ public class InputHandler extends KeyAdapter {
         }
     }
 
+    public boolean consumeJump() {
+        if (jumpPressed) {
+            jumpPressed = false;
+            return true;
+        }
+        return false;
+    }
+
     public boolean consumeShoot() {
         if (shootPressed) {
             shootPressed = false;

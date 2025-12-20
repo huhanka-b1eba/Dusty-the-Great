@@ -11,20 +11,19 @@ public final class PlayerSnapshot {
     private final float y;
     private final boolean facingRight;
     private final int hp;
+    private final boolean isMoving;
+    private final boolean isOnGround;
 
-    public PlayerSnapshot(
-            int id,
-            float x,
-            float y,
-            boolean facingRight,
-            int hp
-    ) {
+    public PlayerSnapshot(int id, float x, float y, boolean facingRight, int hp, boolean isMoving, boolean isOnGround) {
         this.id = id;
         this.x = x;
         this.y = y;
         this.facingRight = facingRight;
         this.hp = hp;
+        this.isMoving = isMoving;
+        this.isOnGround = isOnGround;
     }
+
 
     public void write(DataOutputStream out) throws IOException {
         out.writeInt(id);
@@ -32,7 +31,10 @@ public final class PlayerSnapshot {
         out.writeFloat(y);
         out.writeBoolean(facingRight);
         out.writeInt(hp);
+        out.writeBoolean(isMoving);
+        out.writeBoolean(isOnGround);
     }
+
 
     public static PlayerSnapshot read(DataInputStream in) throws IOException {
         return new PlayerSnapshot(
@@ -40,7 +42,9 @@ public final class PlayerSnapshot {
                 in.readFloat(),
                 in.readFloat(),
                 in.readBoolean(),
-                in.readInt()
+                in.readInt(),
+                in.readBoolean(),
+                in.readBoolean()
         );
     }
 
@@ -49,4 +53,12 @@ public final class PlayerSnapshot {
     public float y() { return y; }
     public boolean facingRight() { return facingRight; }
     public int hp() { return hp; }
+
+    public boolean isMoving() {
+        return isMoving;
+    }
+
+    public boolean isOnGround() {
+        return isOnGround;
+    }
 }

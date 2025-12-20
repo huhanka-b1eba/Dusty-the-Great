@@ -9,5 +9,7 @@ public record PlayerView(
         float x,
         float y,
         boolean facingRight,
-        int hp
+        int hp,
+        boolean isMoving,      // ← новое
+        boolean isOnGround     // ← новое
 ) {}

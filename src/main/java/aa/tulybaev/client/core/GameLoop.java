@@ -49,12 +49,12 @@ public final class GameLoop implements Runnable {
 
                 // 1. Собираем ввод
                 float dx = input.getDx();
-                float dy = input.getDy();
+                boolean jump = input.consumeJump();
                 boolean shoot = input.consumeShoot();
 
                 // 2. Отправляем только ввод (если подключены)
                 if (network.getPlayerId() >= 0) {
-                    network.sendInput(dx, dy, shoot);
+                    network.sendInput(dx, jump, shoot);
                 }
 
                 // 3. Применяем снапшоты для рендера

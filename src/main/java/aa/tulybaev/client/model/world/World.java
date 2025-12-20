@@ -3,7 +3,6 @@ package aa.tulybaev.client.model.world;
 import aa.tulybaev.client.core.InterpolatedSnapshot;
 import aa.tulybaev.client.core.PlayerView;
 import aa.tulybaev.client.model.entity.Bullet;
-import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.entity.RenderablePlayer;
 import aa.tulybaev.client.model.world.objects.*;
@@ -58,11 +57,11 @@ public final class World {
                 if (localPlayer == null) {
                     localPlayer = new RemotePlayer(pv.id());
                 }
-                localPlayer.setState(pv.x(), pv.y(), pv.facingRight(), pv.hp());
+                localPlayer.setState(pv.x(), pv.y(), pv.facingRight(), pv.hp(), pv.isMoving(), pv.isOnGround());
             } else {
                 remotePlayers
                         .computeIfAbsent(pv.id(), RemotePlayer::new)
-                        .setState(pv.x(), pv.y(), pv.facingRight(), pv.hp());
+                        .setState(pv.x(), pv.y(), pv.facingRight(), pv.hp(), pv.isMoving(), pv.isOnGround());
             }
         }
 

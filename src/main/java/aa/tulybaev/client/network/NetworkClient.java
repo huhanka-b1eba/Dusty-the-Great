@@ -39,9 +39,9 @@ public final class NetworkClient {
 
     // ================= ВНЕШНИЙ ИНТЕРФЕЙС =================
 
-    public void sendInput(float dx, float dy, boolean shoot) {
+    public void sendInput(float dx, boolean jump, boolean shoot) {
         if (playerId < 0) return;
-        send(new InputMessage(playerId, dx, dy, shoot));
+        send(new InputMessage(playerId, dx, jump, shoot)); // ← 4 аргумента
     }
 
     public int getPlayerId() {

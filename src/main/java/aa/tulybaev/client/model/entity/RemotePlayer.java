@@ -16,6 +16,7 @@ public final class RemotePlayer implements RenderablePlayer {
     // ===== ANIMATIONS =====
     private final Animation idle;
     private final Animation walk;
+    private final Animation jump;
     private Animation current;
 
     @Override
@@ -30,17 +31,14 @@ public final class RemotePlayer implements RenderablePlayer {
     }
 
     public RemotePlayer(int id) {
-
-        BufferedImage idleImg =
-                SpriteLoader.load("/sprites/Player2/Player-2.png");
-
-        BufferedImage walk1 =
-                SpriteLoader.load("/sprites/Player2/Player-2-walk-1.png");
-        BufferedImage walk2 =
-                SpriteLoader.load("/sprites/Player2/Player-2-walk-2.png");
+        BufferedImage idleImg = SpriteLoader.load("/sprites/Player2/Player-2.png");
+        BufferedImage walk1 = SpriteLoader.load("/sprites/Player2/Player-2-walk-1.png");
+        BufferedImage walk2 = SpriteLoader.load("/sprites/Player2/Player-2-walk-2.png");
+        BufferedImage jumpImg = SpriteLoader.load("/sprites/Player2/Player-2-jump.png");
 
         idle = new Animation(new BufferedImage[]{idleImg}, 30);
         walk = new Animation(new BufferedImage[]{walk1, walk2}, 10);
+        jump = new Animation(new BufferedImage[]{jumpImg}, 30);
 
         current = idle;
     }
@@ -63,9 +61,22 @@ public final class RemotePlayer implements RenderablePlayer {
 
     // ================= RENDER HELPERS =================
 
-    public void updateAnimation(boolean isMoving) {
-        current = isMoving ? walk : idle;
-        current.update();
+    public void setState(float x, float y, boolean facingRight, int hp, boolean isMoving, boolean isOnGround) {
+        this.x = (int) x;
+        this.y = (int) y;
+        this.facingRight = facingRight;
+        this.hp = hp;
+        updateAnimation(isMoving, isOnGround); // ← обновляем анимацию
+    }
+
+    private void updateAnimation(boolean isMoving, boolean isOnGround) {
+        if (!isOnGround) {
+            current = jump;
+        } else if (isMoving) {
+            current = walk;
+        } else {
+            current = idle;
+        }
     }
 
     // ================= GETTERS =================

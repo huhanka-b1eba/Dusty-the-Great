@@ -8,26 +8,26 @@ public final class InputMessage implements GameMessage {
 
     private final int playerId;
     private final float dx;
-    private final float dy;
+    private final boolean jump;
     private final boolean shoot;
 
-    public InputMessage(int playerId, float dx, float dy, boolean shoot) {
+    public InputMessage(int playerId, float dx, boolean jump, boolean shoot) {
         this.playerId = playerId;
         this.dx = dx;
-        this.dy = dy;
+        this.jump = jump;
         this.shoot = shoot;
     }
 
     @Override
     public MessageType type() {
-        return MessageType.INPUT;
+        return MessageType.INPUT; // ← ОБЯЗАТЕЛЬНО!
     }
 
     @Override
     public void write(DataOutputStream out) throws IOException {
         out.writeInt(playerId);
         out.writeFloat(dx);
-        out.writeFloat(dy);
+        out.writeBoolean(jump);
         out.writeBoolean(shoot);
     }
 
@@ -35,13 +35,13 @@ public final class InputMessage implements GameMessage {
         return new InputMessage(
                 in.readInt(),
                 in.readFloat(),
-                in.readFloat(),
+                in.readBoolean(),
                 in.readBoolean()
         );
     }
 
     public int playerId() { return playerId; }
     public float dx() { return dx; }
-    public float dy() { return dy; }
+    public boolean jump() { return jump; }
     public boolean shoot() { return shoot; }
 }
