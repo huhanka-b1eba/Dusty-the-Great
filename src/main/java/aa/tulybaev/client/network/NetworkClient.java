@@ -1,24 +1,30 @@
 package aa.tulybaev.client.network;
 
-import aa.tulybaev.client.model.World;
-import aa.tulybaev.client.model.entity.Player;
+import aa.tulybaev.client.core.SnapshotBuffer;
+import aa.tulybaev.protocol.*;
 
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class NetworkClient {
+/**
+ * Клиентский сетевой слой.
+ * Отвечает ТОЛЬКО за отправку/приём сообщений.
+ */
+public final class NetworkClient {
 
     private static final int SERVER_PORT = 50000;
+    private static final int BUFFER_SIZE = 8192;
 
     private final DatagramSocket socket;
     private final InetAddress serverAddr;
-    private final World world;
+    private final SnapshotBuffer snapshotBuffer;
 
-    private int playerId = -1;
+    private volatile int playerId = -1;
 
-    public NetworkClient(World world) throws Exception {
-        this.world = world;
+    public NetworkClient(SnapshotBuffer snapshotBuffer) throws Exception {
+        this.snapshotBuffer = snapshotBuffer;
         this.socket = new DatagramSocket();
         this.serverAddr = InetAddress.getByName("localhost");
 
@@ -29,50 +35,56 @@ public class NetworkClient {
     // ================= JOIN =================
 
     private void sendJoin() {
-        send("JOIN");
+        send(new JoinRequest("player"));
     }
 
     // ================= INPUT =================
 
-    public void sendInput() {
+    /**
+     * Отправка пользовательского ввода.
+     * Вызывается из GameLoop.
+     */
+    // В NetworkClient.java
+
+    public void sendInput(
+            float x,
+            float y,
+            boolean facingRight,
+            boolean shoot
+    ) {
         if (playerId < 0) return;
 
-        Player p = world.getPlayer();
-
-        send(
-                "INPUT " +
-                        playerId + " " +
-                        p.getDrawX() + " " +
-                        p.getDrawY() + " " +
-                        (p.isFacingRight() ? 1 : 0)
-        );
-    }
-
-    // ================= SHOT =================
-
-    public void sendShot() {
-        if (playerId < 0) return;
-        send("SHOT " + playerId);
+        send(new InputMessage(
+                playerId,
+                x,
+                y,
+                facingRight,
+                shoot
+        ));
     }
 
     // ================= LISTENER =================
 
     private void startListener() {
         Thread t = new Thread(() -> {
-            byte[] buf = new byte[4096];
+            byte[] buf = new byte[BUFFER_SIZE];
 
-            while (true) {
+            while (!socket.isClosed()) {
                 try {
                     DatagramPacket packet =
                             new DatagramPacket(buf, buf.length);
                     socket.receive(packet);
 
-                    String msg = new String(
-                            packet.getData(),
-                            0,
-                            packet.getLength()
-                    );
+                    DataInputStream in =
+                            new DataInputStream(
+                                    new ByteArrayInputStream(
+                                            packet.getData(),
+                                            0,
+                                            packet.getLength()
+                                    )
+                            );
 
+                    GameMessage msg = BinaryProtocol.receive(in);
                     handle(msg);
 
                 } catch (Exception e) {
@@ -85,56 +97,43 @@ public class NetworkClient {
         t.start();
     }
 
-    // ================= MESSAGE HANDLER =================
+    // ================= HANDLER =================
 
-    private void handle(String msg) {
-        String[] parts = msg.split(" ");
+    private void handle(GameMessage msg) {
 
-        switch (parts[0]) {
+        switch (msg.type()) {
 
-            // ---------- JOIN OK ----------
-            case "JOIN_OK" -> {
-                playerId = Integer.parseInt(parts[1]);
-                world.setLocalPlayerId(playerId);
+            case JOIN -> {
+                JoinAccept join = (JoinAccept) msg;
+                this.playerId = join.playerId();
                 System.out.println("Connected as player " + playerId);
             }
 
-            // ---------- PLAYERS STATE ----------
-            case "STATE" -> {
-                if (parts.length < 2) return;
 
-                String[] players = parts[1].split(";");
-
-                for (String s : players) {
-                    if (s.isEmpty()) continue;
-
-                    String[] d = s.split(",");
-
-                    int id = Integer.parseInt(d[0]);
-                    if (id == playerId) continue;
-
-                    double x = Double.parseDouble(d[1]);
-                    double y = Double.parseDouble(d[2]);
-                    boolean facing = d[3].equals("1");
-                    int hp = Integer.parseInt(d[4]);
-
-                    world.updateRemotePlayer(id, x, y, facing, hp);
-                }
+            case SNAPSHOT -> {
+                WorldSnapshotMessage snap =
+                        (WorldSnapshotMessage) msg;
+                snapshotBuffer.push(snap);
             }
 
-            // ---------- BULLETS ----------
-            case "BULLETS" -> {
-                if (parts.length < 2) return;
-                world.syncBulletsFromServer(parts[1]);
+            default -> {
+                // INPUT и DISCONNECT клиент НЕ принимает
             }
         }
     }
 
     // ================= SEND =================
 
-    private void send(String msg) {
+    private void send(GameMessage msg) {
         try {
-            byte[] data = msg.getBytes();
+            ByteArrayOutputStream baos =
+                    new ByteArrayOutputStream();
+            DataOutputStream out =
+                    new DataOutputStream(baos);
+
+            BinaryProtocol.send(out, msg);
+
+            byte[] data = baos.toByteArray();
             socket.send(
                     new DatagramPacket(
                             data,
@@ -143,8 +142,15 @@ public class NetworkClient {
                             SERVER_PORT
                     )
             );
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // ================= GETTERS =================
+
+    public int getPlayerId() {
+        return playerId;
     }
 }

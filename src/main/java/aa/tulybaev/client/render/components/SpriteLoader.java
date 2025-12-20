@@ -1,4 +1,4 @@
-package aa.tulybaev.client.render;
+package aa.tulybaev.client.render.components;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

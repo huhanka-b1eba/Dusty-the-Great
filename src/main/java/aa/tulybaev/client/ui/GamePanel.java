@@ -1,31 +1,36 @@
 package aa.tulybaev.client.ui;
 
-import aa.tulybaev.client.model.World;
-import aa.tulybaev.client.render.Renderer;
+import aa.tulybaev.client.model.world.World;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class GamePanel extends JPanel {
-
-    public static final int WIDTH = 960;
-    public static final int HEIGHT = 540;
-
-    private final Renderer renderer;
+    private final aa.tulybaev.client.render.Renderer renderer;
+    private int hudHp, hudMaxHp, hudAmmo;
+    private boolean hudIsShooting;
 
     public GamePanel(World world) {
-        this.renderer = new Renderer(world);
+        this.renderer = new aa.tulybaev.client.render.Renderer(world);
+    }
 
-        setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setFocusable(true);
-        requestFocusInWindow();
-
-        addKeyListener(world.getInput());
+    public void setHudData(int hp, int maxHp, int ammo, boolean isShooting) {
+        this.hudHp = hp;
+        this.hudMaxHp = maxHp;
+        this.hudAmmo = ammo;
+        this.hudIsShooting = isShooting;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        renderer.render((Graphics2D) g);
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Передаём HUD-данные в Renderer
+        renderer.setHudData(hudHp, hudMaxHp, hudAmmo, hudIsShooting);
+        renderer.render(g2d);
+
+        g2d.dispose();
     }
 }

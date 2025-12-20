@@ -33,6 +33,7 @@ public class Server {
 
         startGameLoop();
         listen();
+        world.setHitListener(this::broadcastHit);
     }
 
     // ================= SERVER TICK =================
@@ -144,6 +145,10 @@ public class Server {
     }
 
     // ================= BROADCAST =================
+
+    private void broadcastHit(int targetId, int damage) {
+        sendAll("HIT " + targetId + " " + damage);
+    }
 
     private void broadcastState() {
         StringBuilder sb = new StringBuilder("STATE ");

@@ -1,24 +1,34 @@
-package aa.tulybaev.client.render;
-
-import aa.tulybaev.client.model.entity.Player;
+package aa.tulybaev.client.render.components;
 
 import java.awt.*;
 
-public class HudRenderer {
+public final class HudRenderer {
 
-    public void render(Graphics2D g, Player player) {
-        drawHpBar(g, player);
-        drawAmmo(g, player);
+    public void render(
+            Graphics2D g,
+            int hp,
+            int maxHp,
+            int ammo,
+            boolean isShooting
+    ) {
+        drawHpBar(g, hp, maxHp);
+        drawAmmo(g, ammo);
+
+        // опционально: индикатор стрельбы
+        if (isShooting) {
+            drawShootingIndicator(g);
+        }
     }
 
     // ================= HP =================
-    private void drawHpBar(Graphics2D g, Player p) {
+
+    private void drawHpBar(Graphics2D g, int hp, int maxHp) {
         int x = 20;
         int y = 20;
         int w = 200;
         int h = 20;
 
-        float hpPercent = (float) p.getHp() / p.getMaxHp();
+        float hpPercent = Math.max(0f, (float) hp / maxHp);
         int hpWidth = (int) (w * hpPercent);
 
         // фон
@@ -40,11 +50,12 @@ public class HudRenderer {
         g.drawRoundRect(x, y, w, h, 8, 8);
 
         // текст
-        g.drawString("HP: " + p.getHp(), x + 6, y + 15);
+        g.drawString("HP: " + hp, x + 6, y + 15);
     }
 
     // ================= AMMO =================
-    private void drawAmmo(Graphics2D g, Player p) {
+
+    private void drawAmmo(Graphics2D g, int ammo) {
         int x = 20;
         int y = 50;
 
@@ -52,6 +63,13 @@ public class HudRenderer {
         g.fillRoundRect(x - 6, y - 16, 120, 26, 10, 10);
 
         g.setColor(Color.WHITE);
-        g.drawString("Ammo: " + p.getAmmo(), x, y);
+        g.drawString("Ammo: " + ammo, x, y);
+    }
+
+    // ================= EXTRA =================
+
+    private void drawShootingIndicator(Graphics2D g) {
+        g.setColor(new Color(255, 220, 120));
+        g.drawString("FIRE", 150, 50);
     }
 }

@@ -1,4 +1,4 @@
-package aa.tulybaev.client.model.world;
+package aa.tulybaev.client.model.world.objects;
 
 import aa.tulybaev.client.model.entity.Bullet;
 import java.awt.Graphics2D;

@@ -1,0 +1,64 @@
+package aa.tulybaev.client.core;
+
+import aa.tulybaev.protocol.WorldSnapshotMessage;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+/**
+ * Хранит последние снапшоты от сервера
+ * и отдаёт интерполированное состояние для рендера
+ */
+public final class SnapshotBuffer {
+
+    // сколько снапшотов держим (обычно 2–5 хватает)
+    private static final int MAX_SNAPSHOTS = 10;
+
+    // искусственная задержка (в тиках сервера)
+    private static final int INTERPOLATION_DELAY = 2;
+
+    private final Deque<WorldSnapshotMessage> buffer = new ArrayDeque<>();
+
+    /**
+     * Добавляется из network-потока
+     */
+    public synchronized void push(WorldSnapshotMessage snapshot) {
+        buffer.addLast(snapshot);
+
+        while (buffer.size() > MAX_SNAPSHOTS) {
+            buffer.removeFirst();
+        }
+    }
+
+    /**
+     * Вызывается из GameLoop / render-потока
+     */
+    public synchronized InterpolatedSnapshot getInterpolated(int renderTick) {
+        if (buffer.size() < 2) {
+            return null;
+        }
+
+        int targetTick = renderTick - INTERPOLATION_DELAY;
+
+        WorldSnapshotMessage older = null;
+        WorldSnapshotMessage newer = null;
+
+        for (WorldSnapshotMessage s : buffer) {
+            if (s.tick() <= targetTick) {
+                older = s;
+            } else {
+                newer = s;
+                break;
+            }
+        }
+
+        if (older == null || newer == null) {
+            return null;
+        }
+
+        float alpha = (float) (targetTick - older.tick())
+                / (float) (newer.tick() - older.tick());
+
+        return new InterpolatedSnapshot(older, newer, alpha);
+    }
+}

@@ -1,7 +1,6 @@
-package aa.tulybaev.client.render;
+package aa.tulybaev.client.render.components;
 
 import javax.sound.sampled.*;
-import java.io.IOException;
 
 public class SoundManager {
 

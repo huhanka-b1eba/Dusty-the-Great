@@ -1,38 +1,56 @@
 package aa.tulybaev.client.model.entity;
 
-import aa.tulybaev.client.model.input.InputHandler;
-import aa.tulybaev.client.model.world.Platform;
-import aa.tulybaev.client.render.Animation;
-import aa.tulybaev.client.render.SoundManager;
-import aa.tulybaev.client.render.SpriteLoader;
+import aa.tulybaev.client.input.InputHandler;
+import aa.tulybaev.client.model.world.objects.Platform;
+import aa.tulybaev.client.render.components.Animation;
+import aa.tulybaev.client.render.components.SoundManager;
+import aa.tulybaev.client.render.components.SpriteLoader;
 
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-public class Player {
+public final class Player implements RenderablePlayer {
+
+    // ================= CONSTANTS =================
 
     private static final double SCALE = 0.25;
-    private double x, y;
-    private double vx, vy;
-    private boolean onGround;
-    private boolean facingRight = true;
+
+    private static final int MAX_HP = 100;
     private static final int MAX_AMMO = 1000;
+
     private static final int FIRE_COOLDOWN = 10;
     private static final double BULLET_SPEED = 35;
-    private int muzzleFlashTimer = 0;
+
+    private static final double GRAVITY = 0.6;
+    private static final double JUMP_VELOCITY = -12;
+    private static final double MOVE_SPEED = 4;
+
     private static final double MUZZLE_X = 0.85;
     private static final double MUZZLE_Y = 0.6;
-    private static final int MAX_HP = 100;
+
+    // ================= STATE =================
+
+    private double x, y;
+    private double vx, vy;
+
+    private boolean onGround;
+    private boolean facingRight = true;
+
     private int hp = MAX_HP;
-
-
     private int ammo = MAX_AMMO;
+
     private int fireCooldown = 0;
+    private int hitFlashTimer = 0;
+    private int muzzleFlashTimer = 0;
+
+    // ================= ANIMATION =================
 
     private final Animation idle;
     private final Animation walk;
     private final Animation jump;
     private Animation current;
+
+    // ================= INIT =================
 
     public Player(double x, double y) {
         this.x = x;
@@ -56,38 +74,43 @@ public class Player {
         current = idle;
     }
 
+    // ================= GAME LOGIC =================
+
     public void update(
             InputHandler input,
-            List<Bullet> bullets,
+//            List<Bullet> bullets,
             int groundY,
             List<Platform> platforms
     ) {
+        // --- movement input ---
         vx = 0;
+        if (input.isLeft())  vx = -MOVE_SPEED;
+        if (input.isRight()) vx = MOVE_SPEED;
 
-        if (input.left) vx = -4;
-        if (input.right) vx = 4;
-
-        if (input.jumpPressed && onGround) {
-            vy = -12;
-            input.jumpPressed = false;
+        // --- jump ---
+        if (input.isJumpPressed() && onGround) {
+            vy = JUMP_VELOCITY;
+            input.setJumpPressed(false);
+            onGround = false;
         }
 
-        vy += 0.6;
+        // --- physics ---
+        vy += GRAVITY;
         x += vx;
         y += vy;
 
         onGround = false;
 
+        // --- ground collision ---
         if (y + getHeight() >= groundY) {
             y = groundY - getHeight();
             vy = 0;
             onGround = true;
         }
 
+        // --- platform collision ---
         for (Platform p : platforms) {
-            boolean falling = vy >= 0;
-
-            if (falling &&
+            if (vy >= 0 &&
                     x + getWidth() > p.getX() &&
                     x < p.getX() + p.getW() &&
                     y + getHeight() >= p.getY() &&
@@ -99,100 +122,110 @@ public class Player {
             }
         }
 
+        // --- direction ---
         if (vx > 0) facingRight = true;
         if (vx < 0) facingRight = false;
 
-        if (!onGround) current = jump;
-        else if (vx != 0) current = walk;
-        else current = idle;
+        // --- animation state (НО НЕ update кадров!) ---
+        if (!onGround)      current = jump;
+        else if (vx != 0)   current = walk;
+        else                current = idle;
 
-        current.update();
-
+        // --- shooting ---
         if (fireCooldown > 0) fireCooldown--;
+        if (hitFlashTimer > 0) hitFlashTimer--;
+        if (muzzleFlashTimer > 0) muzzleFlashTimer--;
 
-        if (input.shootPressed && fireCooldown == 0 && ammo > 0) {
-            shoot(bullets);
+        if (input.isShootPressed() && fireCooldown == 0 && ammo > 0) {
+//            shoot(bullets);
             fireCooldown = FIRE_COOLDOWN;
             ammo--;
-            input.shootPressed = false;
+            input.setShootPressed(false);
         }
-
-        if (muzzleFlashTimer > 0) muzzleFlashTimer--;
     }
 
+    // ================= SHOOT =================
 
     private void shoot(List<Bullet> bullets) {
         muzzleFlashTimer = 5;
+
         double dir = facingRight ? 1 : -1;
 
-        double muzzleWorldX;
-        double muzzleWorldY;
+        double muzzleX = facingRight
+                ? x + getWidth() * MUZZLE_X
+                : x + getWidth() * (1 - MUZZLE_X);
 
-        double w = getWidth();
-        double h = getHeight();
-
-        if (facingRight) {
-            muzzleWorldX = x + w * MUZZLE_X;
-        } else {
-            muzzleWorldX = x + w * (1 - MUZZLE_X);
-        }
-
-        muzzleWorldY = y + h * MUZZLE_Y;
+        double muzzleY = y + getHeight() * MUZZLE_Y;
 
         bullets.add(new Bullet(
-                muzzleWorldX,
-                muzzleWorldY,
-                (facingRight ? 1 : -1) * BULLET_SPEED
+                muzzleX,
+                muzzleY,
+                dir * BULLET_SPEED
         ));
 
-        // ОТБРОС
-        vx -= dir * 2.5;
-
+        vx -= dir * 2.5; // recoil
         SoundManager.play("/sounds/sound-fire.wav");
     }
 
+    // ================= DAMAGE =================
 
+    public void takeDamage(int dmg) {
+        hp -= dmg;
+        hitFlashTimer = 10;
+    }
 
+    // ================= RENDERABLE =================
+
+    @Override
+    public void advanceAnimation() {
+        current.update();
+    }
+
+    @Override
+    public boolean isHit() {
+        return hitFlashTimer > 0;
+    }
+
+    @Override
     public BufferedImage getFrame() {
         return current.getFrame();
     }
 
+    @Override
     public int getDrawX() { return (int) x; }
+
+    @Override
     public int getDrawY() { return (int) y; }
 
+    @Override
     public int getWidth() {
         return (int) (getFrame().getWidth() * SCALE);
     }
 
+    @Override
     public int getHeight() {
         return (int) (getFrame().getHeight() * SCALE);
     }
 
-    public double getScale() {
-        return SCALE;
-    }
-
-    public boolean isShooting() {
-        return muzzleFlashTimer > 0;
-    }
-
-    public int getAmmo() {
-        return ammo;
-    }
-
+    @Override
     public boolean isFacingRight() {
         return facingRight;
     }
 
-    public int getHp() {
-        return hp;
+    // ================= GETTERS =================
+
+    public int getHp() { return hp; }
+    public int getMaxHp() { return MAX_HP; }
+    public int getAmmo() { return ammo; }
+    public boolean isAlive() { return hp > 0; }
+    public boolean isShooting() { return muzzleFlashTimer > 0; }
+
+    public double getX() {
+        return x;
     }
 
-    public int getMaxHp() {
-        return MAX_HP;
+    public double getY() {
+        return y;
     }
 
-    public boolean isAlive() {
-        return hp > 0;
-    }
 }

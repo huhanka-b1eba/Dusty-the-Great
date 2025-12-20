@@ -1,14 +1,14 @@
-package aa.tulybaev.client.model.world;
+package aa.tulybaev.client.model.world.objects;
 
 import aa.tulybaev.client.model.entity.Bullet;
 
 import java.awt.*;
 
-public class Platform implements WorldObject {
+public class Cover implements WorldObject {
 
     private final int x, y, w, h;
 
-    public Platform(int x, int y, int w, int h) {
+    public Cover(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
         this.w = w;
@@ -18,13 +18,13 @@ public class Platform implements WorldObject {
     // ===== UPDATE =====
     @Override
     public void update() {
-        // Платформа статична
+        // укрытие статично
     }
 
     // ===== RENDER =====
     @Override
     public void render(Graphics2D g, int camX, int camY) {
-        g.setColor(new Color(90, 70, 50)); // дерево / земля
+        g.setColor(new Color(60, 100, 60)); // куст / дерево
         g.fillRect(
                 x - camX,
                 y - camY,
@@ -33,20 +33,20 @@ public class Platform implements WorldObject {
         );
     }
 
-    // ===== COLLISION FLAGS =====
+    // ===== COLLISIONS =====
     @Override
     public boolean isSolid() {
-        return true; // игрок может стоять
+        return true; // игрок не проходит
     }
 
     @Override
     public boolean blocksBullets() {
-        return false; // пули пролетают
+        return true; // пули останавливаются
     }
 
     @Override
     public void onBulletHit(Bullet b) {
-        // ничего не делаем
+        // пока не разрушается
     }
 
     // ===== GEOMETRY =====
@@ -73,6 +73,6 @@ public class Platform implements WorldObject {
     // ===== LIFE =====
     @Override
     public boolean isAlive() {
-        return true; // платформы не исчезают
+        return true; // не исчезает
     }
 }

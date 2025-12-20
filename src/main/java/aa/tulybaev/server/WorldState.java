@@ -3,12 +3,15 @@ package aa.tulybaev.server;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WorldState {
+/**
+ * Серверное состояние мира.
+ * Единственный источник истины.
+ */
+public final class WorldState {
 
-    private final List<ServerBullet> bullets =
-            Collections.synchronizedList(new ArrayList<>());
+    // ================= PLAYERS =================
 
-    public static class PlayerState {
+    public static final class PlayerState {
         public int id;
         public double x, y;
         public boolean facingRight;
@@ -16,7 +19,15 @@ public class WorldState {
         public int shootCooldown = 0;
     }
 
-    private final Map<Integer, PlayerState> players = new ConcurrentHashMap<>();
+    private final Map<Integer, PlayerState> players =
+            new ConcurrentHashMap<>();
+
+    // ================= BULLETS =================
+
+    private final List<ServerBullet> bullets =
+            new ArrayList<>();
+
+    // ================= PLAYER =================
 
     public PlayerState createPlayer(int id) {
         PlayerState p = new PlayerState();
@@ -27,22 +38,41 @@ public class WorldState {
         return p;
     }
 
-    public Map<Integer, PlayerState> getPlayers() {
-        return players;
+    public Collection<PlayerState> getPlayers() {
+        return players.values();
     }
 
-    public void spawnBullet(double x, double y, boolean facing, int ownerId) {
-        ServerBullet b = new ServerBullet();
-        b.x = x;
-        b.y = y;
-        b.vx = facing ? 25 : -25;
-        b.ownerId = ownerId;
-        bullets.add(b);
+    // ================= INPUT =================
+
+    public void applyInput(
+            int playerId,
+            float dx,
+            float dy,
+            boolean shoot
+    ) {
+        PlayerState p = players.get(playerId);
+        if (p == null) return;
+
+        // movement
+        p.x += dx * 6;
+        p.y += dy * 8;
+
+        if (dx != 0) {
+            p.facingRight = dx > 0;
+        }
+
+        // shooting
+        if (shoot && p.shootCooldown == 0) {
+            spawnBullet(p);
+            p.shootCooldown = 15;
+        }
     }
+
+    // ================= UPDATE =================
 
     public void update() {
         updateCooldowns();
-        updateBullets();
+//        updateBullets();
     }
 
     private void updateCooldowns() {
@@ -75,6 +105,17 @@ public class WorldState {
         double dx = Math.abs(b.x - p.x);
         double dy = Math.abs(b.y - p.y);
         return dx < 40 && dy < 60;
+    }
+
+    // ================= BULLETS =================
+
+    private void spawnBullet(PlayerState p) {
+        ServerBullet b = new ServerBullet();
+        b.x = p.x;
+        b.y = p.y;
+        b.vx = p.facingRight ? 25 : -25;
+        b.ownerId = p.id;
+        bullets.add(b);
     }
 
     public List<ServerBullet> getBullets() {
