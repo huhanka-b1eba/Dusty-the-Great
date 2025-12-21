@@ -5,6 +5,7 @@ import aa.tulybaev.client.model.entity.Bullet;
 import aa.tulybaev.client.model.entity.RemotePlayer;
 import aa.tulybaev.client.model.world.World;
 import aa.tulybaev.client.network.NetworkClient;
+import aa.tulybaev.client.render.components.SoundManager;
 import aa.tulybaev.client.ui.GameFrame;
 import aa.tulybaev.client.ui.GamePanel;
 
@@ -58,6 +59,15 @@ public final class GameLoop implements Runnable {
                     network.sendInput(dx, jump, shoot);
                 }
 
+                // После отправки ввода:
+                if (shoot) {
+                    SoundManager.play("/sounds/sound-fire.wav");
+                }
+
+                if (jump) {
+                    SoundManager.play("/sounds/jump.wav");
+                }
+
                 // 3. Применяем снапшоты для рендера
                 InterpolatedSnapshot snap = snapshotBuffer.getInterpolated(renderTick);
                 if (snap != null) {
@@ -74,6 +84,10 @@ public final class GameLoop implements Runnable {
                 // 4. Обновляем HUD (берём данные из world)
                 RemotePlayer local = world.getLocalPlayer();
                 if (local != null) {
+                    if (local.getHp() <= 0) {
+                        // Игрок умер
+                        aa.tulybaev.client.Main.triggerGameOver();
+                    }
                     panel.setHudData(local.getHp(), local.getMaxHp(), 100, false);
                 }
 

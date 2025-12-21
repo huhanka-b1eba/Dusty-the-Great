@@ -8,74 +8,89 @@ import aa.tulybaev.client.network.NetworkClient;
 import aa.tulybaev.client.ui.GameFrame;
 import aa.tulybaev.client.ui.GamePanel;
 
+import javax.swing.*;
+
 public class Main {
 
-    public static void main(String[] args) throws Exception {
+    private static GameFrame frame;
+    private static GameLoop gameLoop;
+    private static Thread gameThread;
+    private static NetworkClient network;
+    private static GameState gameState;
 
-        // 1. Загружаем состояние
-        GameState gameState = GameStateStorage.load();
+    public static void main(String[] args) throws Exception {
+        gameState = GameStateStorage.load();
         System.out.println("Loaded lastPlayerId: " + gameState.lastPlayerId);
 
-        // 2. Модель мира
         World world = new World();
-
-        // 3. Буфер снапшотов
         SnapshotBuffer snapshotBuffer = new SnapshotBuffer();
-
-        // 4. Ввод
         InputHandler input = new InputHandler();
-
-        // 5. Сеть
-        NetworkClient network = new NetworkClient(snapshotBuffer);
-        network.setConnectionCallback(id -> {
-            world.setLocalPlayerId(id);
-            System.out.println("Local player ID set to: " + id);
-        });
-
-        // 6. UI
         GamePanel panel = new GamePanel(world);
         panel.addKeyListener(input);
         panel.setFocusable(true);
-        panel.requestFocusInWindow();
 
-        GameFrame frame = new GameFrame(panel);
+        frame = new GameFrame();
+        // Передаём ссылки в GameFrame
+        frame.startGame = Main::startGameImpl;
+        frame.restartGame = Main::restartGameImpl;
+
         frame.setVisible(true);
+        frame.showMenu(); // Начинаем с меню
+    }
 
-        // 7. Игровой цикл
-        GameLoop loop = new GameLoop(
-                world,
-                panel,
-                frame,
-                network,
-                snapshotBuffer,
-                input
-        );
+    // Реализация GameFrame.startGame
+    public static void startGameImpl() {
+        try {
+            World world = new World();
+            SnapshotBuffer snapshotBuffer = new SnapshotBuffer();
+            InputHandler input = new InputHandler();
+            network = new NetworkClient(snapshotBuffer);
+            network.setConnectionCallback(id -> world.setLocalPlayerId(id));
 
-        Thread gameThread = new Thread(loop, "GameLoop");
-        gameThread.start();
+            GamePanel panel = new GamePanel(world);
+            panel.addKeyListener(input);
+            panel.setFocusable(true);
+            panel.requestFocusInWindow();
 
-        // ДОБАВЬ ЭТО: ждём, пока окно не закроется
-        while (frame.isDisplayable()) {
-            Thread.sleep(100);
+            gameLoop = new GameLoop(world, panel, frame, network, snapshotBuffer, input);
+            gameThread = new Thread(gameLoop, "GameLoop");
+            gameThread.start();
+
+            frame.setGamePanel(panel);
+            frame.showGame();
+            SwingUtilities.invokeLater(() -> {
+                panel.requestFocusInWindow();
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    // Реализация GameFrame.restartGame
+    public static void restartGameImpl() {
+        // Останавливаем текущую игру
+        if (gameThread != null) {
+            gameThread.interrupt();
+            gameThread = null;
+        }
+        if (network != null) {
+            network.shutdown();
+            network = null;
         }
 
-        // Завершение
-        network.shutdown();
-        gameThread.interrupt();
+        // Сохраняем результат
+        if (network != null && network.getPlayerId() >= 0) {
+            gameState.lastPlayerId = network.getPlayerId();
+            GameStateStorage.save(gameState);
+        }
 
+        // Запускаем новую игру
+        startGameImpl();
+    }
 
-        // 8. Сохранение при выходе
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            // Сохраняем playerId, если подключились
-            int playerId = network.getPlayerId();
-            if (playerId >= 0) {
-                gameState.lastPlayerId = playerId;
-                GameStateStorage.save(gameState);
-            }
-
-            // Завершаем сетевой клиент и игру
-            network.shutdown();
-            gameThread.interrupt();
-        }));
+    // Метод для GameOver из GameLoop
+    public static void triggerGameOver() {
+        SwingUtilities.invokeLater(() -> frame.showGameOver());
     }
 }

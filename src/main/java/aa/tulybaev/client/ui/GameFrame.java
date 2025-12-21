@@ -1,54 +1,126 @@
 package aa.tulybaev.client.ui;
 
+import aa.tulybaev.client.GameStatus;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class GameFrame extends JFrame {
 
-    private final JLabel hpLabel;
-    private final JLabel ammoLabel;
-    private final JLabel playersLabel;
+    private final CardLayout cardLayout;
+    private final JPanel mainPanel;
 
-    public GameFrame(GamePanel panel) {
+    private final JPanel menuPanel;
+    private final JPanel gameOverPanel;
+    private GamePanel currentGamePanel = null;
+
+    public Runnable startGame;
+    public Runnable restartGame;
+
+
+    public GameFrame() {
         setTitle("Dusty the Great");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
 
-        // Создаём метки
-        this.hpLabel = new JLabel("HP: --");
-        this.ammoLabel = new JLabel("Ammo: --");
-        this.playersLabel = new JLabel("| Players: --");
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
 
-        // Верхняя панель
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        topPanel.setOpaque(false);
-        topPanel.add(hpLabel);
-        topPanel.add(ammoLabel);
-        topPanel.add(playersLabel);
+        menuPanel = createMenuPanel();
+        gameOverPanel = createGameOverPanel();
 
-        // Кнопка выхода
-        JButton exitButton = new JButton("Exit");
-        exitButton.addActionListener(e -> System.exit(0));
-        exitButton.setFocusable(false);
-        topPanel.add(Box.createHorizontalGlue());
-        topPanel.add(exitButton);
+        mainPanel.add(menuPanel, "MENU");
+        mainPanel.add(gameOverPanel, "GAME_OVER");
 
-        // Собираем всё вместе
-        setLayout(new BorderLayout());
-        add(panel, BorderLayout.CENTER);
-        add(topPanel, BorderLayout.NORTH);
-
+        add(mainPanel);
         pack();
         setLocationRelativeTo(null);
     }
 
-    /**
-     * Обновляет HUD-метки.
-     * Должен вызываться из EDT (через SwingUtilities.invokeLater).
-     */
-    public void updateHud(int hp, int ammo, int playerCount) {
-        hpLabel.setText("HP: " + hp);
-        ammoLabel.setText("Ammo: " + ammo);
-        playersLabel.setText("| Players: " + playerCount);
+    private JPanel createMenuPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(100, 50, 100, 50));
+
+        JLabel title = new JLabel("DUSTY THE GREAT");
+        title.setFont(new Font("Arial", Font.BOLD, 36));
+        title.setAlignmentX(CENTER_ALIGNMENT);
+
+        JButton startButton = new JButton("Start Game");
+        startButton.setFont(new Font("Arial", Font.PLAIN, 24));
+        startButton.setAlignmentX(CENTER_ALIGNMENT);
+        startButton.addActionListener(e -> {
+            if (startGame != null) {
+                startGame.run(); // ← ПРАВИЛЬНЫЙ ВЫЗОВ
+            }
+        });
+
+        panel.add(Box.createVerticalGlue());
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(30));
+        panel.add(startButton);
+        panel.add(Box.createVerticalGlue());
+
+        return panel;
     }
+
+    private JPanel createGameOverPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(100, 50, 100, 50));
+
+        JLabel title = new JLabel("YOU DIED!");
+        title.setFont(new Font("Arial", Font.BOLD, 36));
+        title.setForeground(Color.RED);
+        title.setAlignmentX(CENTER_ALIGNMENT);
+
+        JButton restartButton = new JButton("Restart");
+        restartButton.setFont(new Font("Arial", Font.PLAIN, 24));
+        restartButton.setAlignmentX(CENTER_ALIGNMENT);
+        restartButton.addActionListener(e -> {
+            // Перезапуск игры
+            restartGame();
+        });
+
+        panel.add(Box.createVerticalGlue());
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(30));
+        panel.add(restartButton);
+        panel.add(Box.createVerticalGlue());
+
+        return panel;
+    }
+
+    public void setGamePanel(GamePanel panel) {
+        if (currentGamePanel != null) {
+            mainPanel.remove(currentGamePanel);
+        }
+        currentGamePanel = panel;
+        mainPanel.add(currentGamePanel, "PLAYING");
+
+        // Фиксируем размер окна
+        pack();
+        setLocationRelativeTo(null);
+    }
+
+    public void startGame() {
+        if (startGame != null) startGame.run();
+    }
+
+    public void restartGame() {
+        if (restartGame != null) restartGame.run();
+    }
+
+    public void showMenu() {
+        cardLayout.show(mainPanel, "MENU");
+    }
+
+    public void showGame() {
+        cardLayout.show(mainPanel, "PLAYING");
+    }
+
+    public void showGameOver() {
+        cardLayout.show(mainPanel, "GAME_OVER");
+    }
+
 }

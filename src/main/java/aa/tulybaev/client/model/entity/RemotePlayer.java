@@ -62,11 +62,15 @@ public final class RemotePlayer implements RenderablePlayer {
     // ================= RENDER HELPERS =================
 
     public void setState(float x, float y, boolean facingRight, int hp, boolean isMoving, boolean isOnGround) {
-        this.x = (int) x;
-        this.y = (int) y;
-        this.facingRight = facingRight;
+        if (hp < this.hp && hp >= 0) {
+            this.hitFlashTimer = 10;
+            // Воспроизводим звук урона
+            new Thread(() ->
+                    aa.tulybaev.client.render.components.SoundManager.play("/sounds/hit.wav")
+            ).start();
+        }
         this.hp = hp;
-        updateAnimation(isMoving, isOnGround); // ← обновляем анимацию
+        updateAnimation(isMoving, isOnGround);
     }
 
     private void updateAnimation(boolean isMoving, boolean isOnGround) {
